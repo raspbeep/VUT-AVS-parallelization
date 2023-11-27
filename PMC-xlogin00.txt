@@ -1,0 +1,114 @@
+Architektury Výpočetních Systémů (AVS 2023)
+Projekt č. 2 (PMC)
+Login: xlogin00
+
+Úloha 1: Paralelizace původního řešení
+===============================================================================
+
+1) Kterou ze smyček (viz zadání) je vhodnější paralelizovat a co způsobuje 
+   neefektivitu paralelizaci té druhé?
+
+   Pridane pragmy:
+      baseline (bez pragmy, ziadna paralelizacia) - 762.28 ms (priemer zo 100 behov)
+
+      marchCubes - 380.44 ms (priemer zo 100 behov)
+         #pragma omp parallel for reduction(+:totalTriangles) schedule(dynamic, 16)
+
+      evaluateFieldAt - 21684 ms (priemer zo 100 behov)
+         #pragma omp parallel for reduction(min: value) linear(pPoints) simdlen(16)
+
+   Vhodnejsie je paralelizovat najvrchnejsiu smycku for vo funkcii marchCubes. Zhorsenie
+   casu pri paralelizacii smycky vo funkcii evaluateFieldAt je sposobene velkou reziou
+   vytvarania noveho vlakna pre kazdy vrchol pocitanych marching cubes. Pre kazdu
+   cube sa vytvori 8 vlakien, a ich paralelizovany urcyhleny vypocet je v porovnani
+   s pridanou reziou zanedbatelny.
+
+2) Jaké plánování (rozdělení práce mezi vlákna) jste zvolili a proč? 
+   Jaký vliv má velikost "chunk" při dynamickém plánování (8, 16, 32, 64)?
+
+   static
+      8   - 332.32 ms
+      16  - 324.70 ms
+      32  - 340.96 ms
+      64  - 335.64 ms
+      128 - 349.98 ms
+      
+   guided
+      8   - 399.42 ms
+      16  - 376.14 ms
+      32  - 379.54 ms
+      64  - 368.76 ms
+      128 - 407.42 ms
+
+   dynamic
+      8   - 381.10 ms
+      16  - 334.82 ms
+      32  - 392.78 ms
+      64  - 365.28 ms
+      128 - 393.52 ms
+
+   Zvolil som static scheduling, kedze mu konzistentne vychadzali najlepsie
+   spomedzi vsetkych scheduling typov. V kazdej iteracii sa vykonava vypocet
+   pre jednu marching cube, v ktorej sa iteruje cez vsetky vrcholy
+   a cez vsetky points v poli. To znamena, ze vypocet je pomerne vyrovnany vo
+   vsetkych iteraciach paralelizovanej for smycky a teda je vhodne pouzitie
+   schedule(static), pretoze ponuka nizsi overhead v porovnani s dynamickym
+   a riadenym rozdelovanim iteracii medzi vlakna v pripade schedule(dynamic)
+   a schedule(guided).
+
+   Chunk pri dynamickom dynamickom planovani urcuje velkost casti, na ktore sa
+   v runtime rozdeli celkovy pocet iteracii v smycke. Tento typ schedulingu je
+   vhodny v pripadoch, kedy sa velkosti (casy) jednotlivych iteracii mozu 
+   vyrazne lisit a je vhodne distribuovat "baliky" iteracii az pocas runtime
+   nevytazenym vlaknam. 
+
+3) Jakým způsobem zajišťujete ukládání trojúhelníků z několika vláken současně?
+
+   Kedze je metoda `LoopMeshBuilder::emitTriangle` volana sucasne z niekolkych
+   vlakien, musime zaistit vzajomne vylucenie tychto operacii. Avsak kvoli
+   operacii, ktoru chceme v kritickej sekcii z kazdeho vlakna vykonat
+   (std::vector::push_back), nevieme zaistit vzajomne vylucenie pomocou atomic.
+   Preto som pouzil `#pragma omp critical`, ktora zaistuje, ze v sekcii kde sa
+   pridavaju nove prvky do vektoru mTriangles moze byt vzdy iba jedno vlakno.
+
+Úloha 2: Paralelní průchod stromem
+===============================================================================
+
+1) Stručně popište použití OpenMP tasků ve vašem řešení.
+
+2) Jaký vliv má na vaše řešení tzv. "cut-off"? Je vhodné vytvářet nový 
+   task pro každou krychli na nejnižší úrovni?
+
+3) Jakým způsobem zajišťujete ukládání trojúhelníků z několika vláken současně?
+
+Úloha 3: Grafy škálování všech řešení
+===============================================================================
+
+1) Stručně zhodnoťte efektivitu vytvořených řešení (na základě grafů ŠKÁLOVÁNÍ).
+
+2) V jakém případě (v závislosti na počtu bodů ve vstupním souboru a velikosti 
+   mřížky) bude vaše řešení 1. úlohy neefektivní? (pokud takový případ existuje)
+
+3) Je (nebo není) stromový algoritmus efektivnější z pohledu slabého škálování 
+   vzhledem ke vstupu?
+
+4) Jaký je rozdíl mezi silným a slabým škálováním?
+
+Úloha 4: Analýza využití jader pomocí VTune
+================================================================================
+
+1) Jaké bylo průměrné využití jader pro všechny tři implementace s omezením na 
+   18 vláken? Na kolik procent byly využity?
+   
+   ref:
+   loop:
+   tree:
+
+2) Jaké bylo průměrné využití jader pro všechny tři implementace s využitím 
+   všech jader? Na kolik procent se podařilo využít obě CPU?
+   
+   ref:
+   loop:
+   tree:
+
+3) Jaké jsou závěry z těchto měření?

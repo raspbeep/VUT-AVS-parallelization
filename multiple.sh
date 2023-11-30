@@ -7,16 +7,16 @@ CC=icc CXX=icpc cmake ..
 make -j
 
 executable="./PMC"
-builder="--builder loop"
+builder="--builder tree"
 builder_ref="--builder ref"
-input="../data/bun_zipper_res4.pts"
+input="../data/bun_zipper_res3.pts"
 output_new="new_obj.obj"
 output_ref="old_obj.obj"
 
 
 $executable $builder_ref $input $output_ref
 
-runs=50
+runs=10
 total_time=0
 total_time_stdout=0
 

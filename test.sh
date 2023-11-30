@@ -12,32 +12,35 @@ make -j --quiet
 make_status=$?
 
 
+
+test_input="../data/bun_zipper_res4.pts"
+
 if [ $make_status -eq 0 ]; then
     echo "Build succeeded, running the main program..."
-    # ./PMC --builder ref ../data/dragon_vrip_res1.pts bun_ref.obj
-    # ref_status=$?
-    ./PMC --builder loop ../data/dragon_vrip_res1.pts bun_loop.obj
+    ./PMC --builder ref $test_input bun_ref.obj
+    ref_status=$?
+    ./PMC --builder loop $test_input bun_loop.obj
     loop_status=$?
-    ./PMC --builder tree ../data/dragon_vrip_res1.pts bun_tree.obj
+    ./PMC --builder tree $test_input bun_tree.obj
     tree_status=$?
     
     if [ $ref_status -eq 0 ] && [ $loop_status -eq 0 ] && [ $tree_status -eq 0 ]; then
-        # echo "Checking objs LOOP - REF."
-        # python3 ../scripts/check_output.py bun_ref.obj bun_loop.obj
-        # check_ref_loop_status=$?
-        # if [ $check_ref_loop_status -eq 0 ]; then
-        #     echo "[OK] LOOP - REF"
-        # else
-        #     echo "[FAIL] LOOP - REF"
-        # fi
+        echo "Checking objs REF - LOOP"
+        python3 ../scripts/check_output.py bun_ref.obj bun_loop.obj
+        check_ref_loop_status=$?
+        if [ $check_ref_loop_status -eq 0 ]; then
+            echo "  [OK] REF - LOOP"
+        else
+            echo "  [FAIL] REF - LOOP"
+        fi
 
-        echo "Checking objs TREE - REF."
-        python3 ../scripts/check_output.py bun_loop.obj bun_tree.obj
+        echo "Checking objs REF - TREE."
+        python3 ../scripts/check_output.py bun_ref.obj bun_tree.obj
         check_ref_tree_status=$?
         if [ $check_ref_tree_status -eq 0 ]; then
-            echo "[OK] TREE - REF"
+            echo "  [OK] REF - TREE"
         else
-            echo "[FAIL] TREE - REF"
+            echo "  [FAIL] REF - TREE"
         fi
 
     else

@@ -4,7 +4,7 @@
 #SBATCH -n 1 
 #SBATCH -t 0:45:00
 #SBATCH --mail-type END
-#SBATCH -J AVS-evaluate
+#SBATCH -J AVS
 
 cd $SLURM_SUBMIT_DIR
 

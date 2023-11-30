@@ -26,6 +26,11 @@ Login: xlogin00
 2) Jaké plánování (rozdělení práce mezi vlákna) jste zvolili a proč? 
    Jaký vliv má velikost "chunk" při dynamickém plánování (8, 16, 32, 64)?
 
+   čím je chunk_size větší, tím je menší
+synchronizační režie ale hrubší vyvážení zátěže.
+vhodné, když je práce v iteracích stejná (bez chunk_size) nebo se
+mění lineárně (pak je chunk_size nutný). 
+
    static
       8   - 332.32 ms
       16  - 324.70 ms
@@ -75,16 +80,57 @@ Login: xlogin00
 ===============================================================================
 
 1) Stručně popište použití OpenMP tasků ve vašem řešení.
+V implementacii Octree je rekurzivne zanorenie sa o uroven nizsie paralelizovatelna
+cast ulohy a teda je vhodne vyuzitie `task` a `taskwait` konstruktov. Po zavolani
+funkcie `TreeMeshBuilder::marchCubes` sa inicializuju hodnoty celkoveho poctu
+vytvorenych trojuholnikov a pociatocna suradnica v prvom oktante(0.f, 0.f, 0.f).
+Tu sa vytvori paralelna cast a master thread ako prvy zavola rekurzivnu metodu
+`TreeMeshBuilder::marchCubesRecursive` (bolo by mozne aj vyuzitie #pragma omp single).
+Najprv sa pre aktualnu dekomponovanu cast oktaloveho podstromu skontroluje trivialna
+podmienka na vzdialenost k najblizsiemu bodu v priestore `field`. Ak je uz aktualny
+podstrom prazdny (navratova funkcia evaluateFieldAt), dalej sa nedekomponuje
+a pokracuje sa ku generovaniu polygonov v najmensich marching cubes. Inak sa vytvori
+novy OpenMP task a prve volne vlakno ho zacne nezavisle vykonavat a dalej
+sa rekurzivne zanori.
+
+Dovetky `task` pragmy osetruju:
+- zdielanie atomicky aktualizovanej premennej `totalTriangles` (pomocou `default(shared)`)
+- alokaciu privatnej premennej `total_traing_thread` pre navratovu hodnotu rekurzivnej funkcie
+- alokaciu a inicializaciu privatnych premennych `i`, `field`
+   - inicializacia `field` v tomto pripade nie je problem, kedze ide iba o ukazatel.
+
+Na zaver sa po vygenerovani vsetkych polygonov v danom podstrome atomicky aktualizuje
+hodnota totalTriangle (pocet vygenerovanych polygonov v podstrome). Na konci metody
+`TreeMeshBuilder::marchCubesRecursive` este musi vlakno pockat na dokoncenie
+vsetkych nim vytvorenych taskov, inak by navratova hodnota `totalTriangles` nemusela
+byt korektna.
 
 2) Jaký vliv má na vaše řešení tzv. "cut-off"? Je vhodné vytvářet nový 
    task pro každou krychli na nejnižší úrovni?
 
+a) Polygony by mali byt generovane pre kazdu relevantnu marching cube s hranou a<=1
+aby odpovedal referencnemu rieseniu, v ktorom je prave a=1. Pri zvoleni vyssej cuf-off 
+hodnoty, by vysledny isosurface nebol suvisly ale tvoril by iba "riedky" obrys
+objektu z nedostatocneho poctu polygonov.
+
+b) Optimalnejsie riesenie oproti vytvaraniu noveho tasku pre kazdu kocku na najnizsej urovni
+je volanie metody buildCube ak uz vieme, za dalsie zanorenie by bolo pod zvolenou cut-off hodnotou.
+Tymto pristupom usetrime az mGridSize^3 generovani taskov, kedze pre kazdu najmensiu marching
+cube sa zavola metoda `buildCube` este pred zanorenim.
+
 3) Jakým způsobem zajišťujete ukládání trojúhelníků z několika vláken současně?
+Tak ako v casti loop mesh builder, bola aj tu vyuzita `#pragma omp critical` zaistujuca,
+ze iba jedno vlakno bude v jednom momente ukladat vygenerovane trojuholniky.
 
 Úloha 3: Grafy škálování všech řešení
 ===============================================================================
 
 1) Stručně zhodnoťte efektivitu vytvořených řešení (na základě grafů ŠKÁLOVÁNÍ).
+
+
+
+
+
 
 2) V jakém případě (v závislosti na počtu bodů ve vstupním souboru a velikosti 
    mřížky) bude vaše řešení 1. úlohy neefektivní? (pokud takový případ existuje)
@@ -93,6 +139,12 @@ Login: xlogin00
    vzhledem ke vstupu?
 
 4) Jaký je rozdíl mezi silným a slabým škálováním?
+a) strong scaling
+Pri silnom skalovani vychadzame z predpokladu ze s mnozstvo prace je konstantne a v idealnom
+pripade by sa s navysenim vypoctovej sily na dvojnasobok mal cas znizit vypoctu na polovicu.
+Avsak vzdy existuje sekvencna (neparalelizovatelna cast)
+
+b) weak scaling
 
 Úloha 4: Analýza využití jader pomocí VTune
 ================================================================================

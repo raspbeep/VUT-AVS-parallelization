@@ -128,15 +128,17 @@ ze iba jedno vlakno bude v jednom momente ukladat vygenerovane trojuholniky.
 1) Stručně zhodnoťte efektivitu vytvořených řešení (na základě grafů ŠKÁLOVÁNÍ).
 
 
-
-
-
-
 2) V jakém případě (v závislosti na počtu bodů ve vstupním souboru a velikosti 
    mřížky) bude vaše řešení 1. úlohy neefektivní? (pokud takový případ existuje)
 
+
 3) Je (nebo není) stromový algoritmus efektivnější z pohledu slabého škálování 
    vzhledem ke vstupu?
+S narastajucim poctom vlakien a prace na jedno vlakno je rozdiel medzi octree a loop
+cim dalej tym mensi. Pri implementacii octree velmi rychlo prevazi rezia rozdelenia prace
+na vlakna, ak je mnozstvo prace na jedno vlakno male. Podobny problem, avsak nie az tak
+vazny vidime aj pri implementacii loop. Loop vseobecne skaluje lepsie, ciary v grafe by mali
+mat velmi jemny rast.   
 
 4) Jaký je rozdíl mezi silným a slabým škálováním?
 a) strong scaling

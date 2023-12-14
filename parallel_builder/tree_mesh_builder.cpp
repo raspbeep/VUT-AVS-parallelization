@@ -1,7 +1,7 @@
 /**
  * @file    tree_mesh_builder.cpp
  *
- * @author  FULL NAME <xlogin00@stud.fit.vutbr.cz>
+ * @author  FULL NAME <xkrato61@stud.fit.vutbr.cz>
  *
  * @brief   Parallel Marching Cubes implementation using OpenMP tasks + octree early elimination
  *
@@ -73,7 +73,7 @@ unsigned TreeMeshBuilder::marchCubes(const ParametricScalarField &field) {
 
     #pragma omp parallel
     {
-        #pragma omp master
+        #pragma omp single nowait
         {
             mCR_total = marchCubesRecursive(field, initP, mGridSize);
         }
@@ -94,7 +94,7 @@ float TreeMeshBuilder::evaluateFieldAt(const Vec3_t<float> &pos, const Parametri
 
     // 2. Find minimum square distance from points "pos" to any point in the
     //    field.
-    #pragma omp simd reduction(min: value) simdlen(16)
+    // #pragma omp simd reduction(min: value) simdlen(16)
     for(unsigned i = 0; i < count; ++i) {
         float distanceSquared  = (pos.x - pPoints[i].x) * (pos.x - pPoints[i].x);
         distanceSquared       += (pos.y - pPoints[i].y) * (pos.y - pPoints[i].y);
@@ -110,6 +110,6 @@ float TreeMeshBuilder::evaluateFieldAt(const Vec3_t<float> &pos, const Parametri
 }
 
 void TreeMeshBuilder::emitTriangle(const BaseMeshBuilder::Triangle_t &triangle) {
-    #pragma omp critical
+    #pragma omp critical(critical1)
     mTriangles.push_back(triangle);
 }

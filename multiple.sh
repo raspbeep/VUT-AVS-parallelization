@@ -7,23 +7,24 @@ CC=icc CXX=icpc cmake ..
 make -j
 
 executable="./PMC"
-builder="--builder tree"
+builder="--builder loop"
 builder_ref="--builder ref"
 input="../data/bun_zipper_res3.pts"
 output_new="new_obj.obj"
 output_ref="old_obj.obj"
+args="--grid 128"
 
 
-$executable $builder_ref $input $output_ref
+$executable $builder_ref $input $output_ref $args
 
-runs=10
+runs=20
 total_time=0
 total_time_stdout=0
 
 for i in $(seq 1 $runs)
 do
     start_time=$(date +%s.%N)
-    output=$($executable $builder $input $output_new)
+    output=$($executable $builder $input $output_new $args)
     run_time_stdout=$(echo "$output" | grep "Elapsed Time:" | awk '{print $3}')
     total_time_stdout=$(echo "$total_time_stdout + $run_time_stdout" | bc -l)
 

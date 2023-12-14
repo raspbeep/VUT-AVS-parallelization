@@ -1,6 +1,6 @@
 Architektury Výpočetních Systémů (AVS 2023)
 Projekt č. 2 (PMC)
-Login: xlogin00
+Login: xkrato61
 
 Úloha 1: Paralelizace původního řešení
 ===============================================================================
@@ -17,7 +17,7 @@ Login: xlogin00
       evaluateFieldAt - 21684 ms (priemer zo 100 behov)
          #pragma omp parallel for reduction(min: value) linear(pPoints) simdlen(16)
 
-   Vhodnejsie je paralelizovat najvrchnejsiu smycku for vo funkcii marchCubes. Zhorsenie
+   Vhodnejsie je paralelizovat najvrchnejsiu smycku for vo funkcii `marchCubes`. Zhorsenie
    casu pri paralelizacii smycky vo funkcii evaluateFieldAt je sposobene velkou reziou
    vytvarania noveho vlakna pre kazdy vrchol pocitanych marching cubes. Pre kazdu
    cube sa vytvori 8 vlakien, a ich paralelizovany urcyhleny vypocet je v porovnani
@@ -25,11 +25,6 @@ Login: xlogin00
 
 2) Jaké plánování (rozdělení práce mezi vlákna) jste zvolili a proč? 
    Jaký vliv má velikost "chunk" při dynamickém plánování (8, 16, 32, 64)?
-
-   čím je chunk_size větší, tím je menší
-synchronizační režie ale hrubší vyvážení zátěže.
-vhodné, když je práce v iteracích stejná (bez chunk_size) nebo se
-mění lineárně (pak je chunk_size nutný). 
 
    static
       8   - 332.32 ms
@@ -52,7 +47,7 @@ mění lineárně (pak je chunk_size nutný).
       64  - 365.28 ms
       128 - 393.52 ms
 
-   Zvolil som static scheduling, kedze mu konzistentne vychadzali najlepsie
+   Zvolil som static scheduling, kedze mu konzistentne vychadzali najlepsie casy
    spomedzi vsetkych scheduling typov. V kazdej iteracii sa vykonava vypocet
    pre jednu marching cube, v ktorej sa iteruje cez vsetky vrcholy
    a cez vsetky points v poli. To znamena, ze vypocet je pomerne vyrovnany vo
@@ -126,27 +121,39 @@ ze iba jedno vlakno bude v jednom momente ukladat vygenerovane trojuholniky.
 ===============================================================================
 
 1) Stručně zhodnoťte efektivitu vytvořených řešení (na základě grafů ŠKÁLOVÁNÍ).
+Idealnou krivkou pre slabe skalovanie je konstanta alebo slabo klesajuca krivka.
 
+V implementacii octree je narast rezie pri prechode z jedneho na 2 a viac
+vlakien, no krivka nakoniec zacne zacina klesat co znaci, ze zisk z paralelizacie je
+vyznamnejsi ako sposobena rezia. Loop v tomto pripade skaluje lepsie a viac sa 
+priblizuje idealnej krivke, teda 
+
+Pre silne skalovanie je idealna klesajuca krivka so smernicou a=-1. Toto vidime 
+primarne v implementacii loop. Obe implementacie skaluju najlepsie pre velke ulohy,
+pretoze pre male dochadza k vypadkom v cache.  
 
 2) V jakém případě (v závislosti na počtu bodů ve vstupním souboru a velikosti 
    mřížky) bude vaše řešení 1. úlohy neefektivní? (pokud takový případ existuje)
 
+Implementacia bude neefektivna pre male vstupy a vyssi pocet vlakien. 
 
 3) Je (nebo není) stromový algoritmus efektivnější z pohledu slabého škálování 
    vzhledem ke vstupu?
-S narastajucim poctom vlakien a prace na jedno vlakno je rozdiel medzi octree a loop
-cim dalej tym mensi. Pri implementacii octree velmi rychlo prevazi rezia rozdelenia prace
-na vlakna, ak je mnozstvo prace na jedno vlakno male. Podobny problem, avsak nie az tak
-vazny vidime aj pri implementacii loop. Loop vseobecne skaluje lepsie, ciary v grafe by mali
-mat velmi jemny rast.   
+
+S narastajucim poctom vlakien a prace na jedno vlakno sa rozdiel medzi octree a loop
+zmensuje. Pri implementacii octree velmi rychlo prevazi rezia rozdelenia prace
+na vlakna, ak je mnozstvo prace na jedno vlakno male. Podobny problem vidime
+aj pri implementacii loop. Loop vseobecne skaluje lepsie.   
 
 4) Jaký je rozdíl mezi silným a slabým škálováním?
-a) strong scaling
+a) silne skalovani
 Pri silnom skalovani vychadzame z predpokladu ze s mnozstvo prace je konstantne a v idealnom
 pripade by sa s navysenim vypoctovej sily na dvojnasobok mal cas znizit vypoctu na polovicu.
-Avsak vzdy existuje sekvencna (neparalelizovatelna cast)
+Limituje nas velkost sekvencnej (neparalelizovatelnej) casti.
 
-b) weak scaling
+b) slabe skalovani
+V slabom skalovani je mnozstvo casu fixne, avsak je zvacsovana velkost ulohy. V idealnom pripade
+by sme pri zdvojnasobeni zdrojov chceli byt schopni vypocitat dvojnasobne mnozstvo prace.
 
 Úloha 4: Analýza využití jader pomocí VTune
 ================================================================================
@@ -154,15 +161,16 @@ b) weak scaling
 1) Jaké bylo průměrné využití jader pro všechny tři implementace s omezením na 
    18 vláken? Na kolik procent byly využity?
    
-   ref:
-   loop:
-   tree:
+   ref: 2.8% (0.997/36)
+   loop: 48.3% (17.399/36)
+   tree: 44.0% (15.825/36)
 
 2) Jaké bylo průměrné využití jader pro všechny tři implementace s využitím 
    všech jader? Na kolik procent se podařilo využít obě CPU?
    
-   ref:
-   loop:
-   tree:
+   ref: 2.8% (0.998/36)
+   loop: 91.7% (33.003/36)
+   tree: 77% (27.728/36)
 
 3) Jaké jsou závěry z těchto měření?
+Vo vysledkoch je zjavny narast utilizacie jadier pri ich vyssom pocte.

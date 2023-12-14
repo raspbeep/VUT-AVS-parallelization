@@ -77,7 +77,7 @@ void BaseMeshBuilder::buildMesh(const ParametricScalarField &inputField, const s
     }
     else
     {
-        std::cout << "=================================== DONE ======================================" << std::endl;
+        //std::cout << "=================================== DONE ======================================" << std::endl;
         std::cout << "Elapsed Time:        " << elapsedTime << " ms" << std::endl;
         std::cout << "Mesh Triangle Count: " << totalTriangles;
     }
@@ -86,18 +86,18 @@ void BaseMeshBuilder::buildMesh(const ParametricScalarField &inputField, const s
     {
         unsigned bytesWritten = storeMeshFile(meshFilename, totalTriangles);
 
-    //     if(mIsInBatchMode)
-    //     {
-    //         std::cout << bytesWritten;
-    //     }
-    //     else
-    //     {
-    //         std::cout << std::endl;
-    //         std::cout << "=========================== Writting Output File ==============================" << std::endl;
-    //         std::cout << "Output File Size:    " << bytesWritten / 1024 << " KB" << std::endl;
-    //         std::cout << "=================================== DONE ======================================";
-    //     }
-    };
+        if(mIsInBatchMode)
+        {
+            std::cout << bytesWritten;
+        }
+        else
+        {
+            std::cout << std::endl;
+            std::cout << "=========================== Writting Output File ==============================" << std::endl;
+            std::cout << "Output File Size:    " << bytesWritten / 1024 << " KB" << std::endl;
+            std::cout << "=================================== DONE ======================================";
+        }
+    }
 
     std::cout << std::endl;
 }
